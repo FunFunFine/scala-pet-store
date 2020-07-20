@@ -1,7 +1,7 @@
 organization := "io.github.pauljamescleary"
 name := "scala-pet-store"
 version := "0.0.1-SNAPSHOT"
-crossScalaVersions := Seq("2.12.10", "2.13.1")
+crossScalaVersions := Seq("2.13.3")
 
 resolvers += Resolver.sonatypeRepo("snapshots")
 
@@ -43,6 +43,11 @@ libraryDependencies ++= Seq(
   "org.scalacheck" %% "scalacheck" % ScalaCheckVersion % Test,
   "org.scalatest" %% "scalatest" % ScalaTestVersion % Test,
   "org.scalatestplus" %% "scalacheck-1-14" % ScalaTestPlusVersion % Test,
+  "ru.tinkoff" %% "tofu" % "0.7.8",
+  "ru.tinkoff" %% "tofu-optics-macro" % "0.7.8",
+  "ru.tinkoff" %% "tofu-optics-core" % "0.7.8",
+  "ru.tinkoff" %% "tofu-zio-interop" % "0.7.8",
+  "io.estatico" %% "newtype" % "0.4.4",
   // Authentication dependencies
   "io.github.jmcardon" %% "tsec-common" % TsecVersion,
   "io.github.jmcardon" %% "tsec-password" % TsecVersion,

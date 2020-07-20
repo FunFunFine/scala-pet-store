@@ -1,5 +1,6 @@
 package io.github.pauljamescleary.petstore
 
+import cats.Monad
 import config._
 import domain.users._
 import domain.orders._
@@ -19,10 +20,30 @@ import tsec.passwordhashers.jca.BCrypt
 import doobie.util.ExecutionContexts
 import io.circe.config.parser
 import domain.authentication.Auth
+import doobie.hikari.HikariTransactor
+import doobie.util.transactor.Transactor
 import tsec.authentication.SecuredRequestHandler
 import tsec.mac.jca.HMACSHA256
+import tofu.optics.Contains
+import tofu.optics.macros._
+import tofu.syntax.context._
+import tofu.{HasContext, WithRun}
+import tofu.syntax.context._
+import tofu.syntax.monadic._
+import tofu.syntax.lift._
+
+import scala.concurrent.ExecutionContext
+import io.estatico.newtype.macros.newtype
+import tofu.lift.Lift
 
 object Server extends IOApp {
+
+  final case class Executors(
+      serverEC: ExecutionContext,
+      connectionEC: ExecutionContext,
+      transactionEC: ExecutionContext,
+  )
+
   def createServer[F[_]: ContextShift: ConcurrentEffect: Timer]: Resource[F, H4Server[F]] =
     for {
       conf <- Resource.liftF(parser.decodePathF[F, PetStoreConfig]("petstore"))
@@ -54,6 +75,16 @@ object Server extends IOApp {
         .withHttpApp(httpApp)
         .resource
     } yield server
+
+  def makeTransactor[I[_]: Monad: Lift[Resource[F, *], *[_]], F[_]: Async: ContextShift](
+      implicit config: I HasContext PetStoreConfig,
+  ): I[Transactor[F]] =
+    for {
+      conf <- context[I]
+      connEc <- ExecutionContexts.fixedThreadPool[F](conf.db.connections.poolSize).lift[I]
+      txnEc <- ExecutionContexts.cachedThreadPool[F].lift[I]
+      xa <- DatabaseConfig.dbTransactor[I, F](conf.db, connEc, Blocker.liftExecutionContext(txnEc))
+    } yield xa
 
   def run(args: List[String]): IO[ExitCode] = createServer.use(_ => IO.never).as(ExitCode.Success)
 }
