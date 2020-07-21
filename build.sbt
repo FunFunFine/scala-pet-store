@@ -47,7 +47,9 @@ libraryDependencies ++= Seq(
   "ru.tinkoff" %% "tofu-optics-macro" % "0.7.8",
   "ru.tinkoff" %% "tofu-optics-core" % "0.7.8",
   "ru.tinkoff" %% "tofu-zio-interop" % "0.7.8",
+  "ru.tinkoff" %% "tofu-derivation" % "0.7.8",
   "io.estatico" %% "newtype" % "0.4.4",
+  "org.manatki" %% "derevo-cats" % "0.11.4",
   // Authentication dependencies
   "io.github.jmcardon" %% "tsec-common" % TsecVersion,
   "io.github.jmcardon" %% "tsec-password" % TsecVersion,

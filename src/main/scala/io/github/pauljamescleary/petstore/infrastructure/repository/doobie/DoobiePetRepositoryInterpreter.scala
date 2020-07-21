@@ -8,6 +8,8 @@ import doobie.implicits._
 import domain.pets.{Pet, PetRepositoryAlgebra, PetStatus}
 import SQLPagination._
 import cats.effect.Bracket
+import tofu.HasContext
+import tofu.syntax.context.context
 
 private object PetSQL {
   /* We require type StatusMeta to handle our ADT Status */
@@ -105,6 +107,6 @@ class DoobiePetRepositoryInterpreter[F[_]: Bracket[?[_], Throwable]](val xa: Tra
 }
 
 object DoobiePetRepositoryInterpreter {
-  def apply[F[_]: Bracket[?[_], Throwable]](xa: Transactor[F]): DoobiePetRepositoryInterpreter[F] =
-    new DoobiePetRepositoryInterpreter(xa)
+  def apply[I[_]: * HasContext Transactor[F], F[_]: Bracket[?[_], Throwable]](xa: Transactor[F]): DoobiePetRepositoryInterpreter[F] =
+    context[I].map(xa =>new DoobiePetRepositoryInterpreter(xa))
 }

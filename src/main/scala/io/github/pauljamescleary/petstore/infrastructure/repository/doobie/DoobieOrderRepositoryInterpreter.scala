@@ -1,6 +1,7 @@
 package io.github.pauljamescleary.petstore
 package infrastructure.repository.doobie
 
+import cats.Monad
 import cats.data.OptionT
 import cats.effect.Bracket
 import cats.implicits._
@@ -8,6 +9,8 @@ import doobie._
 import doobie.implicits._
 import doobie.implicits.legacy.instant._
 import domain.orders.{Order, OrderRepositoryAlgebra, OrderStatus}
+import tofu.HasContext
+import tofu.syntax.context.context
 
 private object OrderSQL {
   /* We require type StatusMeta to handle our ADT Status */
@@ -51,8 +54,6 @@ class DoobieOrderRepositoryInterpreter[F[_]: Bracket[?[_], Throwable]](val xa: T
 }
 
 object DoobieOrderRepositoryInterpreter {
-  def apply[F[_]: Bracket[?[_], Throwable]](
-      xa: Transactor[F],
-  ): DoobieOrderRepositoryInterpreter[F] =
-    new DoobieOrderRepositoryInterpreter(xa)
+  def apply[I[_] : * HasContext Transactor[F]:Monad, F[_]: Bracket[*[_], Throwable]]: I[DoobieOrderRepositoryInterpreter[F]] =
+    context[I].map(xa =>new DoobieOrderRepositoryInterpreter(xa))
 }

@@ -4,6 +4,8 @@ package pets
 import cats.Applicative
 import cats.data.EitherT
 import cats.implicits._
+import doobie.Transactor
+import tofu.HasContext
 
 class PetValidationInterpreter[F[_]: Applicative](repository: PetRepositoryAlgebra[F])
     extends PetValidationAlgebra[F] {
@@ -34,6 +36,6 @@ class PetValidationInterpreter[F[_]: Applicative](repository: PetRepositoryAlgeb
 }
 
 object PetValidationInterpreter {
-  def apply[F[_]: Applicative](repository: PetRepositoryAlgebra[F]) =
+  def apply[I[_]: * HasContext PetRepositoryAlgebra[F], F[_]: Applicative](repository: PetRepositoryAlgebra[F]) =
     new PetValidationInterpreter[F](repository)
 }

@@ -9,6 +9,8 @@ import cats.implicits._
 import doobie._
 import doobie.implicits._
 import doobie.implicits.legacy.instant._
+import tofu.HasContext
+import tofu.syntax.context._
 import tsec.authentication.{AugmentedJWT, BackingStore}
 import tsec.common.SecureRandomId
 import tsec.jws.JWSSerializer
@@ -37,7 +39,7 @@ private object AuthSQL {
       .query[(String, Long, Instant, Option[Instant])]
 }
 
-class DoobieAuthRepositoryInterpreter[F[_]: Bracket[?[_], Throwable], A](
+class DoobieAuthRepositoryInterpreter[F[_]: Bracket[*[_], Throwable], A](
     val key: MacSigningKey[A],
     val xa: Transactor[F],
 )(
@@ -65,10 +67,12 @@ class DoobieAuthRepositoryInterpreter[F[_]: Bracket[?[_], Throwable], A](
 }
 
 object DoobieAuthRepositoryInterpreter {
-  def apply[F[_]: Bracket[?[_], Throwable], A](key: MacSigningKey[A], xa: Transactor[F])(
+  def apply[I[_]: * HasContext Transactor[F]: Monad, F[_]: Bracket[*[_], Throwable], A](
+      key: MacSigningKey[A],
+  )(
       implicit
       hs: JWSSerializer[JWSMacHeader[A]],
       s: JWSMacCV[MacErrorM, A],
-  ): DoobieAuthRepositoryInterpreter[F, A] =
-    new DoobieAuthRepositoryInterpreter(key, xa)
+  ): I[DoobieAuthRepositoryInterpreter[F, A]] =
+    context[I].map(xa => new DoobieAuthRepositoryInterpreter(key, xa))
 }

@@ -27,7 +27,7 @@ import tsec.mac.jca.HMACSHA256
 import tofu.optics.Contains
 import tofu.optics.macros._
 import tofu.syntax.context._
-import tofu.{HasContext, WithRun}
+import tofu.{HasContext, MonadThrow, WithRun}
 import tofu.syntax.context._
 import tofu.syntax.monadic._
 import tofu.syntax.lift._
@@ -38,24 +38,24 @@ import tofu.lift.Lift
 
 object Server extends IOApp {
 
+  @ClassyOptics
   final case class Executors(
       serverEC: ExecutionContext,
       connectionEC: ExecutionContext,
       transactionEC: ExecutionContext,
   )
-
-  def createServer[F[_]: ContextShift: ConcurrentEffect: Timer]: Resource[F, H4Server[F]] =
+  def createServer[I[+_]: Lift[Resource[F, *], *[_]]: Sync, F[_]: ContextShift: ConcurrentEffect: Timer]
+      : Resource[F, H4Server[F]] =
     for {
-      conf <- Resource.liftF(parser.decodePathF[F, PetStoreConfig]("petstore"))
-      serverEc <- ExecutionContexts.cachedThreadPool[F]
-      connEc <- ExecutionContexts.fixedThreadPool[F](conf.db.connections.poolSize)
-      txnEc <- ExecutionContexts.cachedThreadPool[F]
-      xa <- DatabaseConfig.dbTransactor(conf.db, connEc, Blocker.liftExecutionContext(txnEc))
-      key <- Resource.liftF(HMACSHA256.generateKey[F])
-      authRepo = DoobieAuthRepositoryInterpreter[F, HMACSHA256](key, xa)
-      petRepo = DoobiePetRepositoryInterpreter[F](xa)
-      orderRepo = DoobieOrderRepositoryInterpreter[F](xa)
-      userRepo = DoobieUserRepositoryInterpreter[F](xa)
+      conf <- parser.decodePathF[I, PetStoreConfig]("petstore")
+      serverEc <- ExecutionContexts.cachedThreadPool[F].lift[I]
+
+      xa <- makeTransactor[I, F]
+      key <- HMACSHA256.generateKey[I]
+      authRepo = DoobieAuthRepositoryInterpreter[I, F, HMACSHA256](key)
+      petRepo = DoobiePetRepositoryInterpreter[I, F]
+      orderRepo = DoobieOrderRepositoryInterpreter[I, F]
+      userRepo = DoobieUserRepositoryInterpreter[I, F]
       petValidation = PetValidationInterpreter[F](petRepo)
       petService = PetService[F](petRepo, petValidation)
       userValidation = UserValidationInterpreter[F](userRepo)
