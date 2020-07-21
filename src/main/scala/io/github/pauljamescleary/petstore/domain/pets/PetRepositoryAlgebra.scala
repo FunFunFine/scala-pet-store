@@ -1,7 +1,10 @@
 package io.github.pauljamescleary.petstore.domain.pets
 
 import cats.data.NonEmptyList
+import derevo.derive
+import tofu.higherKind.derived.representableK
 
+@derive(representableK)
 trait PetRepositoryAlgebra[F[_]] {
   def create(pet: Pet): F[Pet]
 

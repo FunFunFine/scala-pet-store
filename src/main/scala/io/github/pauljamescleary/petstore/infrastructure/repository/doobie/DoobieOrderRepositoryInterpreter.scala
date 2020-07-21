@@ -54,6 +54,6 @@ class DoobieOrderRepositoryInterpreter[F[_]: Bracket[?[_], Throwable]](val xa: T
 }
 
 object DoobieOrderRepositoryInterpreter {
-  def apply[I[_] : * HasContext Transactor[F]:Monad, F[_]: Bracket[*[_], Throwable]]: I[DoobieOrderRepositoryInterpreter[F]] =
+  def apply[I[_] : *[_] HasContext Transactor[F]:Monad, F[_]: Bracket[*[_], Throwable]]: I[DoobieOrderRepositoryInterpreter[F]] =
     context[I].map(xa =>new DoobieOrderRepositoryInterpreter(xa))
 }

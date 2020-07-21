@@ -67,7 +67,7 @@ class DoobieAuthRepositoryInterpreter[F[_]: Bracket[*[_], Throwable], A](
 }
 
 object DoobieAuthRepositoryInterpreter {
-  def apply[I[_]: * HasContext Transactor[F]: Monad, F[_]: Bracket[*[_], Throwable], A](
+  def apply[I[_]: *[_] HasContext Transactor[F]: Monad, F[_]: Bracket[*[_], Throwable], A](
       key: MacSigningKey[A],
   )(
       implicit
@@ -75,4 +75,17 @@ object DoobieAuthRepositoryInterpreter {
       s: JWSMacCV[MacErrorM, A],
   ): I[DoobieAuthRepositoryInterpreter[F, A]] =
     context[I].map(xa => new DoobieAuthRepositoryInterpreter(key, xa))
+}
+import derevo.derive
+import tofu.higherKind.derived.representableK
+
+@derive(representableK)
+trait BackingStoreJWT[F[_], A] extends BackingStore[F, SecureRandomId, AugmentedJWT[A, Long]] {
+  def put(jwt: AugmentedJWT[A, Long]): F[AugmentedJWT[A, Long]]
+
+  def update(jwt: AugmentedJWT[A, Long]): F[AugmentedJWT[A, Long]]
+
+  def delete(id: SecureRandomId): F[Unit]
+
+  def get(id: SecureRandomId): OptionT[F, AugmentedJWT[A, Long]]
 }

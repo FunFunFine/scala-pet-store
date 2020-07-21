@@ -1,10 +1,9 @@
 package io.github.pauljamescleary.petstore.domain
 package pets
 
-import cats.Applicative
+import cats.{Applicative, Monad}
 import cats.data.EitherT
 import cats.implicits._
-import doobie.Transactor
 import tofu.HasContext
 
 class PetValidationInterpreter[F[_]: Applicative](repository: PetRepositoryAlgebra[F])
@@ -36,6 +35,6 @@ class PetValidationInterpreter[F[_]: Applicative](repository: PetRepositoryAlgeb
 }
 
 object PetValidationInterpreter {
-  def apply[I[_]: * HasContext PetRepositoryAlgebra[F], F[_]: Applicative](repository: PetRepositoryAlgebra[F]) =
-    new PetValidationInterpreter[F](repository)
+  def apply[I[_]: Monad, F[_]: Applicative: PetRepositoryAlgebra]: I[PetValidationAlgebra[F]] =
+    Monad[I].pure(new PetValidationInterpreter[F](implicitly[PetRepositoryAlgebra[F]]))
 }

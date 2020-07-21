@@ -6,35 +6,28 @@ import domain.users._
 import domain.orders._
 import domain.pets._
 import infrastructure.endpoint._
-import infrastructure.repository.doobie.{
-  DoobieAuthRepositoryInterpreter,
-  DoobieOrderRepositoryInterpreter,
-  DoobiePetRepositoryInterpreter,
-  DoobieUserRepositoryInterpreter,
-}
+import infrastructure.repository.doobie.{DoobieAuthRepositoryInterpreter, DoobieOrderRepositoryInterpreter, DoobiePetRepositoryInterpreter, DoobieUserRepositoryInterpreter}
 import cats.effect._
 import org.http4s.server.{Router, Server => H4Server}
 import org.http4s.server.blaze.BlazeServerBuilder
-import org.http4s.implicits._
 import tsec.passwordhashers.jca.BCrypt
 import doobie.util.ExecutionContexts
 import io.circe.config.parser
 import domain.authentication.Auth
-import doobie.hikari.HikariTransactor
 import doobie.util.transactor.Transactor
+import io.github.pauljamescleary.petstore.A.App
+import tofu.env.Env
 import tsec.authentication.SecuredRequestHandler
 import tsec.mac.jca.HMACSHA256
-import tofu.optics.Contains
 import tofu.optics.macros._
 import tofu.syntax.context._
-import tofu.{HasContext, MonadThrow, WithRun}
-import tofu.syntax.context._
+import tofu.{HasContext, WithLocal}
 import tofu.syntax.monadic._
 import tofu.syntax.lift._
 
 import scala.concurrent.ExecutionContext
-import io.estatico.newtype.macros.newtype
 import tofu.lift.Lift
+import tofu.optics.{Contains, Label}
 
 object Server extends IOApp {
 
@@ -44,6 +37,16 @@ object Server extends IOApp {
       connectionEC: ExecutionContext,
       transactionEC: ExecutionContext,
   )
+
+  @ClassyOptics
+  type App[+A] = Env[Environment1, A]
+  final case class Environment1(a: Int)
+  implicit def appSubContext[C](implicit e: Environment1 Contains C): App WithLocal C = //WithContext aka HasContext
+    WithLocal[App, Environment1].subcontext(e)
+  val x = implicitly[HasContext[App, Profile[App]]]
+
+
+
   def createServer[I[+_]: Lift[Resource[F, *], *[_]]: Sync, F[_]: ContextShift: ConcurrentEffect: Timer]
       : Resource[F, H4Server[F]] =
     for {
@@ -56,7 +59,7 @@ object Server extends IOApp {
       petRepo = DoobiePetRepositoryInterpreter[I, F]
       orderRepo = DoobieOrderRepositoryInterpreter[I, F]
       userRepo = DoobieUserRepositoryInterpreter[I, F]
-      petValidation = PetValidationInterpreter[F](petRepo)
+      petValidation = PetValidationInterpreter[I, F](petRepo)
       petService = PetService[F](petRepo, petValidation)
       userValidation = UserValidationInterpreter[F](userRepo)
       orderService = OrderService[F](orderRepo)

@@ -7,6 +7,7 @@ import doobie._
 import doobie.implicits._
 import domain.pets.{Pet, PetRepositoryAlgebra, PetStatus}
 import SQLPagination._
+import cats.Functor
 import cats.effect.Bracket
 import tofu.HasContext
 import tofu.syntax.context.context
@@ -107,6 +108,6 @@ class DoobiePetRepositoryInterpreter[F[_]: Bracket[?[_], Throwable]](val xa: Tra
 }
 
 object DoobiePetRepositoryInterpreter {
-  def apply[I[_]: * HasContext Transactor[F], F[_]: Bracket[?[_], Throwable]](xa: Transactor[F]): DoobiePetRepositoryInterpreter[F] =
+  def apply[I[_]: *[_] HasContext Transactor[F] : Functor, F[_]: Bracket[?[_], Throwable]]: I[DoobiePetRepositoryInterpreter[F]] =
     context[I].map(xa =>new DoobiePetRepositoryInterpreter(xa))
 }
