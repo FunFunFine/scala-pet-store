@@ -16,6 +16,7 @@ import io.circe.config.parser
 import domain.authentication.Auth
 import doobie.util.transactor.Transactor
 import io.github.pauljamescleary.petstore.A.App
+import io.github.pauljamescleary.petstore.Server.{App, Environment1}
 import tofu.env.Env
 import tsec.authentication.SecuredRequestHandler
 import tsec.mac.jca.HMACSHA256
@@ -29,21 +30,31 @@ import scala.concurrent.ExecutionContext
 import tofu.lift.Lift
 import tofu.optics.{Contains, Label}
 
-object Server extends IOApp {
 
+object PetStore extends IOApp {
+  type App[+A] = Env[Environment, A]
   @ClassyOptics
-  final case class Executors(
-      serverEC: ExecutionContext,
-      connectionEC: ExecutionContext,
-      transactionEC: ExecutionContext,
-  )
+  final case class Environment(
+
+                              )
+
+  object Environment {
+    implicit def subContext[C](implicit e: Environment Contains C): App WithLocal C = //WithContext aka HasContext
+      WithLocal[App, Environment].subcontext(e)
+  }
+
+  override def run(args: List[String]): IO[ExitCode] = ???
+}
+
+
+
+
+object Server extends IOApp {
 
   @ClassyOptics
   type App[+A] = Env[Environment1, A]
   final case class Environment1(a: Int)
-  implicit def appSubContext[C](implicit e: Environment1 Contains C): App WithLocal C = //WithContext aka HasContext
-    WithLocal[App, Environment1].subcontext(e)
-  val x = implicitly[HasContext[App, Profile[App]]]
+
 
 
 
@@ -51,7 +62,6 @@ object Server extends IOApp {
       : Resource[F, H4Server[F]] =
     for {
       conf <- parser.decodePathF[I, PetStoreConfig]("petstore")
-      serverEc <- ExecutionContexts.cachedThreadPool[F].lift[I]
 
       xa <- makeTransactor[I, F]
       key <- HMACSHA256.generateKey[I]
@@ -73,11 +83,27 @@ object Server extends IOApp {
         "/orders" -> OrderEndpoints.endpoints[F, HMACSHA256](orderService, routeAuth),
       ).orNotFound
       _ <- Resource.liftF(DatabaseConfig.initializeDb(conf.db))
+      serverEc <- ExecutionContexts.cachedThreadPool[F].lift[I]
       server <- BlazeServerBuilder[F](serverEc)
         .bindHttp(conf.server.port, conf.server.host)
         .withHttpApp(httpApp)
         .resource
     } yield server
+
+  def makeHttpApp[F[_]: Sync] = Router(
+    "/users" -> UserEndpoints
+      .endpoints[F, BCrypt, HMACSHA256](userService, BCrypt.syncPasswordHasher[F], routeAuth),
+    "/pets" -> PetEndpoints.endpoints[F, HMACSHA256](petService, routeAuth),
+    "/orders" -> OrderEndpoints.endpoints[F, HMACSHA256](orderService, routeAuth),
+  ).orNotFound
+
+  def makeServer[I[_]: Monad: Lift[Resource[F, *], *[_]], F[_]:Sync](conf: ServerConfig) = for {
+    serverEc <- ExecutionContexts.cachedThreadPool[F].lift[I]
+    server <- BlazeServerBuilder[F](serverEc)
+      .bindHttp(conf.port, conf.host)
+      .withHttpApp(httpApp)
+      .resource.lift[I]
+  } yield server
 
   def makeTransactor[I[_]: Monad: Lift[Resource[F, *], *[_]], F[_]: Async: ContextShift](
       implicit config: I HasContext PetStoreConfig,
