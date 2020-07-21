@@ -17,6 +17,7 @@ import domain.authentication.Auth
 import doobie.util.transactor.Transactor
 import io.github.pauljamescleary.petstore.A.App
 import io.github.pauljamescleary.petstore.Server.{App, Environment1}
+import org.http4s.implicits.http4sKleisliResponseSyntaxOptionT
 import tofu.env.Env
 import tsec.authentication.SecuredRequestHandler
 import tsec.mac.jca.HMACSHA256
@@ -71,11 +72,12 @@ object Server extends IOApp {
       userRepo = DoobieUserRepositoryInterpreter[I, F]
       petValidation = PetValidationInterpreter[I, F](petRepo)
       petService = PetService[F](petRepo, petValidation)
-      userValidation = UserValidationInterpreter[F](userRepo)
-      orderService = OrderService[F](orderRepo)
-      userService = UserService[F](userRepo, userValidation)
+      userValidation = UserValidation.make[F]
+      orderService = OrderService.make[F]
+      userService = UserService.make[F]
       authenticator = Auth.jwtAuthenticator[F, HMACSHA256](key, authRepo, userRepo)
       routeAuth = SecuredRequestHandler(authenticator)
+      /*- ---- */
       httpApp = Router(
         "/users" -> UserEndpoints
           .endpoints[F, BCrypt, HMACSHA256](userService, BCrypt.syncPasswordHasher[F], routeAuth),
