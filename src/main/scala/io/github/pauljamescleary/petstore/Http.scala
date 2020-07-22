@@ -20,6 +20,7 @@ import org.http4s.server.{Router, Server}
 import tsec.authentication.SecuredRequestHandler
 import tsec.mac.jca.HMACSHA256
 import tsec.passwordhashers.jca.BCrypt
+
 object Http {
 
   def mkServer[F[_]: ConcurrentEffect: Timer](
