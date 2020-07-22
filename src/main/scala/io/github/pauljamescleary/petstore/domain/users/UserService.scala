@@ -3,8 +3,7 @@ package users
 
 import cats.data._
 import cats.Monad
-import derevo.derive
-import tofu.higherKind.derived.representableK
+import tofu.data.derived.ContextEmbed
 import tofu.syntax.monadic._
 
 final class UserService[F[_]: Monad](
@@ -41,7 +40,7 @@ final class UserService[F[_]: Monad](
     userRepo.list(pageSize, offset)
 }
 
-object UserService {
+object UserService extends ContextEmbed[UserService]{
   def make[F[_]: Monad](
                          implicit userRepo: UserRepositoryAlgebra[F],
                          validation: UserValidation[F],

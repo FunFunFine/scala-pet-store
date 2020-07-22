@@ -7,16 +7,14 @@ import cats.effect.Sync
 import cats.implicits._
 import io.circe.generic.auto._
 import io.circe.syntax._
-import io.github.pauljamescleary.petstore.domain.authentication.Auth
+import io.github.pauljamescleary.petstore.domain.authentication.{Auth, Authenticate}
+import io.github.pauljamescleary.petstore.domain.pets.{Pet, PetService, PetStatus}
+import io.github.pauljamescleary.petstore.domain.{PetAlreadyExistsError, PetNotFoundError}
 import org.http4s.circe._
 import org.http4s.dsl.Http4sDsl
 import org.http4s.{EntityDecoder, HttpRoutes, QueryParamDecoder}
-
-import domain.{PetAlreadyExistsError, PetNotFoundError}
-import domain.pets.{Pet, PetService, PetStatus}
-import io.github.pauljamescleary.petstore.domain.users.User
-import tsec.jwt.algorithms.JWTMacAlgo
 import tsec.authentication._
+import tsec.jwt.algorithms.JWTMacAlgo
 
 class PetEndpoints[F[_]: Sync, Auth: JWTMacAlgo] extends Http4sDsl[F] {
   import Pagination._
@@ -114,8 +112,8 @@ class PetEndpoints[F[_]: Sync, Auth: JWTMacAlgo] extends Http4sDsl[F] {
   }
 
   def endpoints(
-      petService: PetService[F],
-      auth: SecuredRequestHandler[F, Long, User, AugmentedJWT[Auth, Long]],
+                 petService: PetService[F],
+                 auth: Authenticate[F, Auth],
   ): HttpRoutes[F] = {
     val authEndpoints: AuthService[F, Auth] = {
       val allRoles =
@@ -130,14 +128,14 @@ class PetEndpoints[F[_]: Sync, Auth: JWTMacAlgo] extends Http4sDsl[F] {
       Auth.allRolesHandler(allRoles)(Auth.adminOnly(onlyAdmin))
     }
 
-    auth.liftService(authEndpoints)
+    auth.secureService(authEndpoints)
   }
 }
 
 object PetEndpoints {
   def endpoints[F[_]: Sync, Auth: JWTMacAlgo](
-      petService: PetService[F],
-      auth: SecuredRequestHandler[F, Long, User, AugmentedJWT[Auth, Long]],
+                                               petService: PetService[F],
+                                               auth: Authenticate[F, Auth],
   ): HttpRoutes[F] =
     new PetEndpoints[F, Auth].endpoints(petService, auth)
 }

@@ -1,16 +1,13 @@
 package io.github.pauljamescleary.petstore
 package infrastructure.repository.doobie
 
-import cats.Monad
 import cats.data.OptionT
-import cats.effect.Bracket
 import cats.implicits._
 import doobie._
 import doobie.implicits._
 import doobie.implicits.legacy.instant._
-import domain.orders.{Order, OrderRepositoryAlgebra, OrderStatus}
-import tofu.HasContext
-import tofu.syntax.context.context
+import io.github.pauljamescleary.petstore.domain.orders.{Order, OrderRepositoryAlgebra, OrderStatus}
+import tofu.BracketThrow
 
 private object OrderSQL {
   /* We require type StatusMeta to handle our ADT Status */
@@ -34,7 +31,7 @@ private object OrderSQL {
   """.update
 }
 
-class DoobieOrderRepositoryInterpreter[F[_]: Bracket[?[_], Throwable]](val xa: Transactor[F])
+final class DoobieOrderRepositoryInterpreter[F[_]: BracketThrow](xa: Transactor[F])
     extends OrderRepositoryAlgebra[F] {
   import OrderSQL._
 
@@ -53,7 +50,7 @@ class DoobieOrderRepositoryInterpreter[F[_]: Bracket[?[_], Throwable]](val xa: T
       .value
 }
 
-object DoobieOrderRepositoryInterpreter {
-  def apply[I[_] : *[_] HasContext Transactor[F]:Monad, F[_]: Bracket[*[_], Throwable]]: I[DoobieOrderRepositoryInterpreter[F]] =
-    context[I].map(xa =>new DoobieOrderRepositoryInterpreter(xa))
+object DoobieOrderRepositoryInterpreter  {
+  def make[F[_]: BracketThrow: Transactor]: OrderRepositoryAlgebra[F] =
+    new DoobieOrderRepositoryInterpreter(implicitly[Transactor[F]])
 }

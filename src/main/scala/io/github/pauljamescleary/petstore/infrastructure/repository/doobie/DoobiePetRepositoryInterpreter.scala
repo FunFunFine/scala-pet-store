@@ -5,12 +5,9 @@ import cats.data._
 import cats.implicits._
 import doobie._
 import doobie.implicits._
-import domain.pets.{Pet, PetRepositoryAlgebra, PetStatus}
-import SQLPagination._
-import cats.Functor
-import cats.effect.Bracket
-import tofu.HasContext
-import tofu.syntax.context.context
+import io.github.pauljamescleary.petstore.domain.pets.{Pet, PetRepositoryAlgebra, PetStatus}
+import io.github.pauljamescleary.petstore.infrastructure.repository.doobie.SQLPagination._
+import tofu.BracketThrow
 
 private object PetSQL {
   /* We require type StatusMeta to handle our ADT Status */
@@ -75,7 +72,7 @@ private object PetSQL {
   }
 }
 
-class DoobiePetRepositoryInterpreter[F[_]: Bracket[?[_], Throwable]](val xa: Transactor[F])
+final class DoobiePetRepositoryInterpreter[F[_]: BracketThrow](xa: Transactor[F])
     extends PetRepositoryAlgebra[F] {
   import PetSQL._
 
@@ -108,6 +105,6 @@ class DoobiePetRepositoryInterpreter[F[_]: Bracket[?[_], Throwable]](val xa: Tra
 }
 
 object DoobiePetRepositoryInterpreter {
-  def apply[I[_]: *[_] HasContext Transactor[F] : Functor, F[_]: Bracket[?[_], Throwable]]: I[DoobiePetRepositoryInterpreter[F]] =
-    context[I].map(xa =>new DoobiePetRepositoryInterpreter(xa))
+  def make[F[_]: BracketThrow:Transactor]: PetRepositoryAlgebra[F] =
+    new DoobiePetRepositoryInterpreter(implicitly[Transactor[F]])
 }

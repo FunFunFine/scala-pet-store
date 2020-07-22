@@ -8,9 +8,8 @@ import cats.effect.Bracket
 import cats.implicits._
 import doobie._
 import doobie.implicits._
+import tofu.BracketThrow
 import doobie.implicits.legacy.instant._
-import tofu.HasContext
-import tofu.syntax.context._
 import tsec.authentication.{AugmentedJWT, BackingStore}
 import tsec.common.SecureRandomId
 import tsec.jws.JWSSerializer
@@ -67,25 +66,15 @@ class DoobieAuthRepositoryInterpreter[F[_]: Bracket[*[_], Throwable], A](
 }
 
 object DoobieAuthRepositoryInterpreter {
-  def apply[I[_]: *[_] HasContext Transactor[F]: Monad, F[_]: Bracket[*[_], Throwable], A](
+  def apply[F[_]: BracketThrow, A](
       key: MacSigningKey[A],
+      xa: Transactor[F],
   )(
       implicit
       hs: JWSSerializer[JWSMacHeader[A]],
       s: JWSMacCV[MacErrorM, A],
-  ): I[DoobieAuthRepositoryInterpreter[F, A]] =
-    context[I].map(xa => new DoobieAuthRepositoryInterpreter(key, xa))
-}
-import derevo.derive
-import tofu.higherKind.derived.representableK
+  ): DoobieAuthRepositoryInterpreter[F, A] =
+    new DoobieAuthRepositoryInterpreter(key, xa)
 
-@derive(representableK)
-trait BackingStoreJWT[F[_], A] extends BackingStore[F, SecureRandomId, AugmentedJWT[A, Long]] {
-  def put(jwt: AugmentedJWT[A, Long]): F[AugmentedJWT[A, Long]]
 
-  def update(jwt: AugmentedJWT[A, Long]): F[AugmentedJWT[A, Long]]
-
-  def delete(id: SecureRandomId): F[Unit]
-
-  def get(id: SecureRandomId): OptionT[F, AugmentedJWT[A, Long]]
 }

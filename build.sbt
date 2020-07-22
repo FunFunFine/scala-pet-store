@@ -83,3 +83,10 @@ micrositeBaseUrl := "scala-pet-store"
 fork in run := true
 
 dockerExposedPorts ++= Seq(8080)
+scalacOptions ++= Seq(
+  "-deprecation",
+  "-encoding", "UTF-8",
+  "-feature",
+  "-unchecked",
+  "-Ymacro-annotations"
+)

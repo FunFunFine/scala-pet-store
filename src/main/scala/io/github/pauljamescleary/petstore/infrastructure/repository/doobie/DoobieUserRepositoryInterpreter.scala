@@ -1,19 +1,15 @@
 package io.github.pauljamescleary.petstore
 package infrastructure.repository.doobie
 
-import cats.Monad
 import cats.data.OptionT
-import cats.effect.Bracket
 import cats.implicits._
 import doobie._
 import doobie.implicits._
 import io.circe.parser.decode
 import io.circe.syntax._
-import domain.users.{Role, User, UserRepositoryAlgebra}
+import io.github.pauljamescleary.petstore.domain.users.{Role, User, UserRepositoryAlgebra}
 import io.github.pauljamescleary.petstore.infrastructure.repository.doobie.SQLPagination._
-import tofu.HasContext
-import tofu.syntax.context.context
-import tsec.authentication.IdentityStore
+import tofu.BracketThrow
 
 private object UserSQL {
   // H2 does not support JSON data type.
@@ -54,9 +50,8 @@ private object UserSQL {
   """.query
 }
 
-class DoobieUserRepositoryInterpreter[F[_]: Bracket[?[_], Throwable]](val xa: Transactor[F])
-    extends UserRepositoryAlgebra[F]
-    with IdentityStore[F, Long, User] { self =>
+final class DoobieUserRepositoryInterpreter[F[_]: BracketThrow](xa: Transactor[F])
+    extends UserRepositoryAlgebra[F] { self =>
   import UserSQL._
 
   def create(user: User): F[User] =
@@ -83,6 +78,6 @@ class DoobieUserRepositoryInterpreter[F[_]: Bracket[?[_], Throwable]](val xa: Tr
 }
 
 object DoobieUserRepositoryInterpreter {
-  def apply[I[_]:Monad: *[_] HasContext Transactor[F], F[_]: Bracket[?[_], Throwable]]: I[DoobieUserRepositoryInterpreter[F]] =
-    context[I].map(xa => new DoobieUserRepositoryInterpreter(xa))
+  def make[F[_]: BracketThrow: Transactor]: UserRepositoryAlgebra[F] =
+    new DoobieUserRepositoryInterpreter(implicitly[Transactor[F]])
 }
