@@ -1,6 +1,6 @@
-Scala Pet Store [![Build Status][build-badge]][build-link] [![Chat][gitter-badge]][gitter-link]
+TOFU Scala Pet Store 
 ==============
-An implementation of the java pet store using FP techniques in scala.
+An implementation of the java pet store using FP techniques in scala, **enhanced with [TOFU](https://github.com/TinkoffCreditSystems/tofu) library**.
 
 # Thank you!
 Special thank you to [Zak Patterson](https://github.com/zakpatterson) who also maintains this project; as well as the many [contributors](AUTHORS.md) who continue to improve the pet store
