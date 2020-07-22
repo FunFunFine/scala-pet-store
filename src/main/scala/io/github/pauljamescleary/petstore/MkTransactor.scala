@@ -1,21 +1,23 @@
 package io.github.pauljamescleary.petstore
 
 import cats.effect.{Async, Blocker, ContextShift, Resource}
+import cats.{Applicative, Defer}
 import doobie.ExecutionContexts
 import doobie.util.transactor.Transactor
 import io.github.pauljamescleary.petstore.config.DatabaseConfig
+import tofu.lift.Lift
 
 object MkTransactor {
 
-  def makeF[F[_]: Async: ContextShift](
+  def make[I[_]: Async: ContextShift, F[_]: Defer: Applicative: Lift[I, *[_]]](
       config: DatabaseConfig,
-  ): Resource[F, Transactor[F]] =
+  ): Resource[I, Transactor[F]] =
     for {
-      connEc <- ExecutionContexts.fixedThreadPool[F](config.connections.poolSize)
+      connEc <- ExecutionContexts.fixedThreadPool[I](config.connections.poolSize)
       txnEc <- ExecutionContexts
-        .cachedThreadPool[F]
+        .cachedThreadPool[I]
       xa <- DatabaseConfig
-        .dbTransactor[F](config, connEc, Blocker.liftExecutionContext(txnEc))
-    } yield xa
+        .dbTransactor[I](config, connEc, Blocker.liftExecutionContext(txnEc))
+    } yield xa.mapK(Lift[I, F].liftF)
 
 }

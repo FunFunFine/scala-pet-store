@@ -1,7 +1,6 @@
 package io.github.pauljamescleary.petstore
 
 import cats.effect.{Resource, _}
-import cats.~>
 import doobie.util.transactor.Transactor
 import io.circe.config.parser
 import io.github.pauljamescleary.petstore.config._
@@ -54,36 +53,14 @@ object PetStore extends TaskApp {
       userService = UserService.make[App], //f
     )
 
-//  def buildTxa: Resource[Task, Transactor[Task]] = ???
-//
-//  (for {
-//    conf <- parser.decodePathF[Resource[Task, *], PetStoreConfig]("petstore")
-//    txa <- buildTxa
-//
-//  } yield Infrastructure[App](conf, txa.mapK(Lambda[Task ~> App](t => Env.fromTask(t))))).use {
-//    infr => Env.pure[Environment, Environment](init(infr.config, infr.xa))
-//  }
 
   override def run(args: List[String]): Task[ExitCode] =
     (for {
       conf <- Resource.liftF[Task, PetStoreConfig](
         parser.decodePathF[Task, PetStoreConfig]("petstore"),
       )
-      xa <- MkTransactor.makeF[Task](conf.db)
-    } yield xa.mapK[App](Lambda[Task ~> App](t => Env.fromTask(t)))).use(_ =>
-      Task.never[Unit].map(_ => ExitCode.Success),
-    )
+      xa <- MkTransactor.make[Task, App](conf.db)
+    } yield xa).use(_ => Task.never[Unit].map(_ => ExitCode.Success))
 
-  //{
 
-//    Env.apply[Environment, Unit](env => )
-//    (for {
-  //auth <- Authenticate.makeHMACSHA256[App]
-
-  //      env <- init // Resource[Task, *]
-//      server <- Http.mkServer[Task](env.httpApp.mapK(Lambda[App ~> Task](app => app.run(env))).app, env.config)
-//      _ <- Resource.liftF(DatabaseConfig.initializeDb[Task](env.config.db))
-//    } yield server)
-//      .use(_ => Task.never[Unit].map(_ => ExitCode.Success))
-//  }
 }
