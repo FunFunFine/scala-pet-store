@@ -7,7 +7,11 @@ import io.github.pauljamescleary.petstore.domain.authentication.Authenticate
 import io.github.pauljamescleary.petstore.domain.orders.OrderService
 import io.github.pauljamescleary.petstore.domain.pets.PetService
 import io.github.pauljamescleary.petstore.domain.users.UserService
-import io.github.pauljamescleary.petstore.infrastructure.endpoint.{OrderEndpoints, PetEndpoints, UserEndpoints}
+import io.github.pauljamescleary.petstore.infrastructure.endpoint.{
+  OrderEndpoints,
+  PetEndpoints,
+  UserEndpoints,
+}
 import org.http4s.HttpApp
 import org.http4s.implicits.http4sKleisliResponseSyntaxOptionT
 import org.http4s.server.blaze.BlazeServerBuilder

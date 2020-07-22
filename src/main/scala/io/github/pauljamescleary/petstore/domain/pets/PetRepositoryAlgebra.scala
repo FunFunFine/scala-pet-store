@@ -23,6 +23,4 @@ trait PetRepositoryAlgebra[F[_]] {
   def findByTag(tags: NonEmptyList[String]): F[List[Pet]]
 }
 
-object PetRepositoryAlgebra extends ContextEmbed[PetRepositoryAlgebra]{
-
-}
+object PetRepositoryAlgebra extends ContextEmbed[PetRepositoryAlgebra] {}

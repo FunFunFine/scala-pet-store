@@ -112,8 +112,8 @@ class PetEndpoints[F[_]: Sync, Auth: JWTMacAlgo] extends Http4sDsl[F] {
   }
 
   def endpoints(
-                 petService: PetService[F],
-                 auth: Authenticate[F, Auth],
+      petService: PetService[F],
+      auth: Authenticate[F, Auth],
   ): HttpRoutes[F] = {
     val authEndpoints: AuthService[F, Auth] = {
       val allRoles =
@@ -134,8 +134,8 @@ class PetEndpoints[F[_]: Sync, Auth: JWTMacAlgo] extends Http4sDsl[F] {
 
 object PetEndpoints {
   def endpoints[F[_]: Sync, Auth: JWTMacAlgo](
-                                               petService: PetService[F],
-                                               auth: Authenticate[F, Auth],
+      petService: PetService[F],
+      auth: Authenticate[F, Auth],
   ): HttpRoutes[F] =
     new PetEndpoints[F, Auth].endpoints(petService, auth)
 }

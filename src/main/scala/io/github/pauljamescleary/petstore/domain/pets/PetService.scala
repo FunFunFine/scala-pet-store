@@ -14,8 +14,8 @@ import tofu.syntax.monadic._
   *           as long as it is a Monad
   */
 class PetService[F[_]: Monad](
-                               repository: PetRepositoryAlgebra[F],
-                               validation: PetValidation[F],
+    repository: PetRepositoryAlgebra[F],
+    validation: PetValidation[F],
 ) {
   def create(pet: Pet): EitherT[F, PetAlreadyExistsError, Pet] =
     for {
@@ -48,9 +48,9 @@ class PetService[F[_]: Monad](
 }
 
 object PetService extends ContextEmbed[PetService] {
-  def make[F[_]:Monad](
-                        implicit repository: PetRepositoryAlgebra[F],
-                        validation: PetValidation[F],
+  def make[F[_]: Monad](
+      implicit repository: PetRepositoryAlgebra[F],
+      validation: PetValidation[F],
   ): PetService[F] =
     new PetService[F](repository, validation)
 }

@@ -13,6 +13,4 @@ trait OrderRepositoryAlgebra[F[_]] {
   def delete(orderId: Long): F[Option[Order]]
 }
 
-object OrderRepositoryAlgebra extends ContextEmbed[OrderRepositoryAlgebra] {
-
-}
+object OrderRepositoryAlgebra extends ContextEmbed[OrderRepositoryAlgebra] {}

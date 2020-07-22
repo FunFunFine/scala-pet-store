@@ -105,6 +105,6 @@ final class DoobiePetRepositoryInterpreter[F[_]: BracketThrow](xa: Transactor[F]
 }
 
 object DoobiePetRepositoryInterpreter {
-  def make[F[_]: BracketThrow:Transactor]: PetRepositoryAlgebra[F] =
+  def make[F[_]: BracketThrow: Transactor]: PetRepositoryAlgebra[F] =
     new DoobiePetRepositoryInterpreter(implicitly[Transactor[F]])
 }

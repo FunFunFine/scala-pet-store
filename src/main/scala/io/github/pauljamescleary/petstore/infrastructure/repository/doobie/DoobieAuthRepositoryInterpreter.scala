@@ -76,5 +76,4 @@ object DoobieAuthRepositoryInterpreter {
   ): DoobieAuthRepositoryInterpreter[F, A] =
     new DoobieAuthRepositoryInterpreter(key, xa)
 
-
 }

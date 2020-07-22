@@ -46,8 +46,8 @@ class OrderEndpoints[F[_]: Sync, Auth: JWTMacAlgo] extends Http4sDsl[F] {
   }
 
   def endpoints(
-                 orderService: OrderService[F],
-                 auth: Authenticate[F, Auth],
+      orderService: OrderService[F],
+      auth: Authenticate[F, Auth],
   ): HttpRoutes[F] = {
     val authEndpoints: AuthService[F, Auth] =
       Auth.allRolesHandler(placeOrderEndpoint(orderService).orElse(getOrderEndpoint(orderService))) {
@@ -60,8 +60,8 @@ class OrderEndpoints[F[_]: Sync, Auth: JWTMacAlgo] extends Http4sDsl[F] {
 
 object OrderEndpoints {
   def endpoints[F[_]: Sync, Auth: JWTMacAlgo](
-                                               orderService: OrderService[F],
-                                               auth: Authenticate[F, Auth],
+      orderService: OrderService[F],
+      auth: Authenticate[F, Auth],
   ): HttpRoutes[F] =
     new OrderEndpoints[F, Auth].endpoints(orderService, auth)
 }

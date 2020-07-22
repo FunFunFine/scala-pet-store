@@ -17,7 +17,7 @@ class OrderService[F[_]: Functor](orderRepo: OrderRepositoryAlgebra[F]) {
     orderRepo.delete(id).as(())
 }
 
-object OrderService extends ContextEmbed[OrderService]{
+object OrderService extends ContextEmbed[OrderService] {
   def make[F[_]: Functor](implicit orderRepo: OrderRepositoryAlgebra[F]): OrderService[F] =
     new OrderService(orderRepo)
 }

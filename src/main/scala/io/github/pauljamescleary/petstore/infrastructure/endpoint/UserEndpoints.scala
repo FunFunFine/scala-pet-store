@@ -116,9 +116,9 @@ class UserEndpoints[F[_]: Sync, A, Auth: JWTMacAlgo] extends Http4sDsl[F] {
   }
 
   def endpoints(
-                 userService: UserService[F],
-                 cryptService: PasswordHasher[F, A],
-                 auth: Authenticate[F, Auth],
+      userService: UserService[F],
+      cryptService: PasswordHasher[F, A],
+      auth: Authenticate[F, Auth],
   ): HttpRoutes[F] = {
     val authEndpoints: AuthService[F, Auth] =
       Auth.adminOnly {
@@ -138,9 +138,9 @@ class UserEndpoints[F[_]: Sync, A, Auth: JWTMacAlgo] extends Http4sDsl[F] {
 
 object UserEndpoints {
   def endpoints[F[_]: Sync, A, Auth: JWTMacAlgo](
-                                                  userService: UserService[F],
-                                                  cryptService: PasswordHasher[F, A],
-                                                  auth: Authenticate[F, Auth],
+      userService: UserService[F],
+      cryptService: PasswordHasher[F, A],
+      auth: Authenticate[F, Auth],
   ): HttpRoutes[F] =
     new UserEndpoints[F, A, Auth].endpoints(userService, cryptService, auth)
 }

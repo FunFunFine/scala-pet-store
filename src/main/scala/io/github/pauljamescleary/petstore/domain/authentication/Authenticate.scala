@@ -15,7 +15,7 @@ trait Authenticate[F[_], Auth] {
   def authenticator: Authenticator[F, Long, User, AugmentedJWT[Auth, Long]]
 }
 
-object Authenticate  {
+object Authenticate {
   def makeHMACSHA256[F[_]: Sync](
       implicit xa: Transactor[F],
       userRepository: UserRepositoryAlgebra[F],
@@ -29,7 +29,8 @@ object Authenticate  {
       override def secureService(service: AuthService[F, HMACSHA256]): HttpRoutes[F] =
         handler.liftService(service)
 
-      override def authenticator: Authenticator[F, Long, User, AugmentedJWT[HMACSHA256, Long]] = handler.authenticator
+      override def authenticator: Authenticator[F, Long, User, AugmentedJWT[HMACSHA256, Long]] =
+        handler.authenticator
     }
 
 }

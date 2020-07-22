@@ -18,7 +18,7 @@ trait PetValidation[F[_]] {
   def exists(petId: Option[Long]): EitherT[F, PetNotFoundError.type, Unit]
 }
 
-object PetValidation extends ContextEmbed[PetValidation]{
+object PetValidation extends ContextEmbed[PetValidation] {
   def make[F[_]: Monad](implicit repository: PetRepositoryAlgebra[F]): PetValidation[F] =
     new PetValidation[F] {
       def doesNotExist(pet: Pet): EitherT[F, PetAlreadyExistsError, Unit] = EitherT {

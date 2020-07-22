@@ -7,7 +7,7 @@ import tofu.higherKind.derived.representableK
 import tsec.authentication.IdentityStore
 
 @derive(representableK)
-trait UserRepositoryAlgebra[F[_]] extends IdentityStore[F, Long, User]{
+trait UserRepositoryAlgebra[F[_]] extends IdentityStore[F, Long, User] {
   def create(user: User): F[User]
 
   def update(user: User): OptionT[F, User]
@@ -23,6 +23,4 @@ trait UserRepositoryAlgebra[F[_]] extends IdentityStore[F, Long, User]{
   def list(pageSize: Int, offset: Int): F[List[User]]
 }
 
-object UserRepositoryAlgebra extends ContextEmbed[UserRepositoryAlgebra] {
-
-}
+object UserRepositoryAlgebra extends ContextEmbed[UserRepositoryAlgebra] {}

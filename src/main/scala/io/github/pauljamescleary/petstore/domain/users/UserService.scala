@@ -7,8 +7,8 @@ import tofu.data.derived.ContextEmbed
 import tofu.syntax.monadic._
 
 final class UserService[F[_]: Monad](
-                                      userRepo: UserRepositoryAlgebra[F],
-                                      validation: UserValidation[F],
+    userRepo: UserRepositoryAlgebra[F],
+    validation: UserValidation[F],
 ) {
   def createUser(user: User): EitherT[F, UserAlreadyExistsError, User] =
     for {
@@ -40,9 +40,9 @@ final class UserService[F[_]: Monad](
     userRepo.list(pageSize, offset)
 }
 
-object UserService extends ContextEmbed[UserService]{
+object UserService extends ContextEmbed[UserService] {
   def make[F[_]: Monad](
-                         implicit userRepo: UserRepositoryAlgebra[F],
-                         validation: UserValidation[F],
+      implicit userRepo: UserRepositoryAlgebra[F],
+      validation: UserValidation[F],
   ) = new UserService[F](userRepo, validation)
 }

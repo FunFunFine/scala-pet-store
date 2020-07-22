@@ -50,7 +50,7 @@ final class DoobieOrderRepositoryInterpreter[F[_]: BracketThrow](xa: Transactor[
       .value
 }
 
-object DoobieOrderRepositoryInterpreter  {
+object DoobieOrderRepositoryInterpreter {
   def make[F[_]: BracketThrow: Transactor]: OrderRepositoryAlgebra[F] =
     new DoobieOrderRepositoryInterpreter(implicitly[Transactor[F]])
 }
