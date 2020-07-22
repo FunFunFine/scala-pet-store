@@ -57,7 +57,7 @@ object PetStore extends TaskApp {
       userValidation = UserValidation.make[App],
       orderService = OrderService.make[App],
       userService = UserService.make[App],
-      xa,
+      xa
     )
 
   override def run(args: List[String]): Task[ExitCode] =
