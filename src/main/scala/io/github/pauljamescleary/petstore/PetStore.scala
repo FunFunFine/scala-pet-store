@@ -40,15 +40,13 @@ object PetStore extends TaskApp {
   )
 
   object Environment {
-    implicit def subContext[C](implicit e: Environment Contains C): App WithLocal C = //WithContext aka HasContext
+    implicit def subContext[C](implicit e: Environment Contains C): App WithLocal C = //whats the point of WithLocal?
       WithLocal[App, Environment].subcontext(e)
   }
   def init: Resource[Task, Environment] =
     for {
-      conf <- Resource.liftF[Task, PetStoreConfig](
-        parser.decodePathF[Task, PetStoreConfig]("petstore"),
-      )
-      implicit0(xa: Transactor[App]) <- MkTransactor.make[Task, App](conf.db)
+      conf <- Resource.liftF(parser.decodePathF[Task, PetStoreConfig]("petstore"))
+      implicit0(xa: Transactor[App]) <- MkTransactor.make[Task, App](conf.db)//Can't create Embed[Transactor]
     } yield Environment(
       conf,
       petRepository = DoobiePetRepositoryInterpreter.make[App],
