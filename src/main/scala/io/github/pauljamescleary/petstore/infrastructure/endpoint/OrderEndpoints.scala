@@ -6,12 +6,13 @@ import cats.implicits._
 import io.circe.generic.auto._
 import io.circe.syntax._
 import io.github.pauljamescleary.petstore.domain.OrderNotFoundError
-import io.github.pauljamescleary.petstore.domain.authentication.{Auth, Authenticate}
+import io.github.pauljamescleary.petstore.domain.authentication.Auth
 import io.github.pauljamescleary.petstore.domain.orders.{Order, OrderService}
+import io.github.pauljamescleary.petstore.domain.users.User
 import org.http4s._
 import org.http4s.circe._
 import org.http4s.dsl.Http4sDsl
-import tsec.authentication.asAuthed
+import tsec.authentication.{AugmentedJWT, SecuredRequestHandler, asAuthed}
 import tsec.jwt.algorithms.JWTMacAlgo
 
 class OrderEndpoints[F[_]: Sync, Auth: JWTMacAlgo] extends Http4sDsl[F] {
@@ -47,21 +48,21 @@ class OrderEndpoints[F[_]: Sync, Auth: JWTMacAlgo] extends Http4sDsl[F] {
 
   def endpoints(
       orderService: OrderService[F],
-      auth: Authenticate[F, Auth],
+      auth: SecuredRequestHandler[F, Long, User, AugmentedJWT[Auth, Long]],
   ): HttpRoutes[F] = {
     val authEndpoints: AuthService[F, Auth] =
       Auth.allRolesHandler(placeOrderEndpoint(orderService).orElse(getOrderEndpoint(orderService))) {
         Auth.adminOnly(deleteOrderEndpoint(orderService))
       }
 
-    auth.secureService(authEndpoints)
+    auth.liftService(authEndpoints)
   }
 }
 
 object OrderEndpoints {
   def endpoints[F[_]: Sync, Auth: JWTMacAlgo](
       orderService: OrderService[F],
-      auth: Authenticate[F, Auth],
+      auth: SecuredRequestHandler[F, Long, User, AugmentedJWT[Auth, Long]],
   ): HttpRoutes[F] =
     new OrderEndpoints[F, Auth].endpoints(orderService, auth)
 }

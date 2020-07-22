@@ -9,7 +9,6 @@ import io.circe.syntax._
 import org.http4s.circe._
 import org.http4s.dsl.Http4sDsl
 import org.http4s.{EntityDecoder, HttpRoutes}
-
 import domain._
 import domain.users._
 import domain.authentication._
@@ -118,7 +117,7 @@ class UserEndpoints[F[_]: Sync, A, Auth: JWTMacAlgo] extends Http4sDsl[F] {
   def endpoints(
       userService: UserService[F],
       cryptService: PasswordHasher[F, A],
-      auth: Authenticate[F, Auth],
+      auth: SecuredRequestHandler[F, Long, User, AugmentedJWT[Auth, Long]],
   ): HttpRoutes[F] = {
     val authEndpoints: AuthService[F, Auth] =
       Auth.adminOnly {
@@ -132,7 +131,7 @@ class UserEndpoints[F[_]: Sync, A, Auth: JWTMacAlgo] extends Http4sDsl[F] {
       loginEndpoint(userService, cryptService, auth.authenticator) <+>
         signupEndpoint(userService, cryptService)
 
-    unauthEndpoints <+> auth.secureService(authEndpoints)
+    unauthEndpoints <+> auth.liftService(authEndpoints)
   }
 }
 
@@ -140,7 +139,7 @@ object UserEndpoints {
   def endpoints[F[_]: Sync, A, Auth: JWTMacAlgo](
       userService: UserService[F],
       cryptService: PasswordHasher[F, A],
-      auth: Authenticate[F, Auth],
+      auth: SecuredRequestHandler[F, Long, User, AugmentedJWT[Auth, Long]],
   ): HttpRoutes[F] =
     new UserEndpoints[F, A, Auth].endpoints(userService, cryptService, auth)
 }

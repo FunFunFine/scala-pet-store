@@ -81,7 +81,7 @@ micrositeBaseUrl := "scala-pet-store"
 
 // Note: This fixes error with sbt run not loading config properly
 fork in run := true
-
+addCompilerPlugin("com.olegpy" %% "better-monadic-for" % "0.3.1")
 dockerExposedPorts ++= Seq(8080)
 scalacOptions ++= Seq(
   "-deprecation",

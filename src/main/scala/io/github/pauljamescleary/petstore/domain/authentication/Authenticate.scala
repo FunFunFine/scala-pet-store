@@ -16,11 +16,10 @@ trait Authenticate[F[_], Auth] {
 }
 
 object Authenticate {
-  def makeHMACSHA256[F[_]: Sync](
-      implicit xa: Transactor[F],
+  def makeHMACSHA256[F[_]: Sync](xa: Transactor[F],
       userRepository: UserRepositoryAlgebra[F],
   ): F[Authenticate[F, HMACSHA256]] =
-    for {
+   for {
       key <- HMACSHA256.generateKey[F]
       authRepo = DoobieAuthRepositoryInterpreter[F, HMACSHA256](key, xa)
       authenticator = Auth.jwtAuthenticator[F, HMACSHA256](key, authRepo, userRepository)
@@ -32,5 +31,4 @@ object Authenticate {
       override def authenticator: Authenticator[F, Long, User, AugmentedJWT[HMACSHA256, Long]] =
         handler.authenticator
     }
-
 }

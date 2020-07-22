@@ -27,6 +27,7 @@ object PetStore extends TaskApp {
   case class Infrastructure[F[_]](config: PetStoreConfig, xa: Transactor[F])
   @ClassyOptics
   final case class Environment(
+      config: PetStoreConfig,
       petRepository: PetRepositoryAlgebra[App],
       orderRepository: OrderRepositoryAlgebra[App],
       userRepository: UserRepositoryAlgebra[App],
@@ -35,32 +36,48 @@ object PetStore extends TaskApp {
       userValidation: UserValidation[App],
       orderService: OrderService[App],
       userService: UserService[App],
+      xa: Transactor[App],
   )
 
   object Environment {
     implicit def subContext[C](implicit e: Environment Contains C): App WithLocal C = //WithContext aka HasContext
       WithLocal[App, Environment].subcontext(e)
   }
-  def init(implicit xa: Transactor[App]): Environment =
-    Environment(
+  def init: Resource[Task, Environment] =
+    for {
+      conf <- Resource.liftF[Task, PetStoreConfig](
+        parser.decodePathF[Task, PetStoreConfig]("petstore"),
+      )
+      implicit0(xa: Transactor[App]) <- MkTransactor.make[Task, App](conf.db)
+    } yield Environment(
+      conf,
       petRepository = DoobiePetRepositoryInterpreter.make[App],
       orderRepository = DoobieOrderRepositoryInterpreter.make[App],
       userRepository = DoobieUserRepositoryInterpreter.make[App],
       petValidation = PetValidation.make[App],
-      petService = PetService.make[App], //f
+      petService = PetService.make[App],
       userValidation = UserValidation.make[App],
-      orderService = OrderService.make[App], //f
-      userService = UserService.make[App], //f
+      orderService = OrderService.make[App],
+      userService = UserService.make[App],
+      xa,
     )
 
-
   override def run(args: List[String]): Task[ExitCode] =
-    (for {
-      conf <- Resource.liftF[Task, PetStoreConfig](
-        parser.decodePathF[Task, PetStoreConfig]("petstore"),
-      )
-      xa <- MkTransactor.make[Task, App](conf.db)
-    } yield xa).use(_ => Task.never[Unit].map(_ => ExitCode.Success))
+    init.flatMap {
+      case Environment(
+          config,
+          _,
+          _,
+          userRepository,
+          _,
+          petService,
+          _,
+          orderService,
+          userService,
+          xa,
+          ) => Http.mkServer(xa, userRepository, petService, userService, orderService, config)
+    }.use(_ => Task.never[Unit].map(_ => ExitCode.Success))
 
+  //
 
 }
