@@ -25,7 +25,6 @@ object PetStore extends TaskApp {
   type App[+A] = Env[Environment, A]
   type Initiate[+A] = Resource[Task, A]
 
-  case class Infrastructure[F[_]](config: PetStoreConfig, xa: Transactor[F])
   @ClassyOptics
   final case class Environment(
       config: PetStoreConfig,
