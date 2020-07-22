@@ -14,15 +14,12 @@ import io.github.pauljamescleary.petstore.infrastructure.endpoint.{
   UserEndpoints,
 }
 import io.github.pauljamescleary.petstore.infrastructure.repository.doobie.DoobieAuthRepositoryInterpreter
-import org.http4s.{Request, Response}
 import org.http4s.implicits.http4sKleisliResponseSyntaxOptionT
 import org.http4s.server.blaze.BlazeServerBuilder
 import org.http4s.server.{Router, Server}
-import tofu.lift.Unlift
 import tsec.authentication.SecuredRequestHandler
 import tsec.mac.jca.HMACSHA256
 import tsec.passwordhashers.jca.BCrypt
-import tofu.syntax.monadic._
 object Http {
 
   def mkServer[F[_]: ConcurrentEffect: Timer](

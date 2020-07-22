@@ -15,10 +15,11 @@ import io.github.pauljamescleary.petstore.infrastructure.repository.doobie.{
 import monix.eval.{Task, TaskApp}
 import tofu.WithLocal
 import tofu.env.Env
+import tofu.lift.Unlift
 import tofu.optics.Contains
 //import tofu.syntax.monadic._
 import tofu.optics.macros._
-
+import tofu.syntax.unlift._
 object PetStore extends TaskApp {
 
   type App[+A] = Env[Environment, A]
@@ -64,20 +65,27 @@ object PetStore extends TaskApp {
 
   override def run(args: List[String]): Task[ExitCode] =
     init
-      .flatMap {
-        case Environment(
-            config,
-            _,
-            _,
-            userRepository,
-            _,
-            petService,
-            _,
-            orderService,
-            userService,
-            xa,
+      .use {
+        case env @ Environment(
+              config,
+              _,
+              _,
+              userRepository,
+              _,
+              petService,
+              _,
+              orderService,
+              userService,
+              xa,
             ) =>
-          Http.mkServer(xa, userRepository, petService, userService, orderService, config)
+          Unlift[Task, App]
+            .concurrentEffectWith[ExitCode](implicit ce =>
+              Http
+                .mkServer(xa, userRepository, petService, userService, orderService, config)
+                .use(_ => Env.fromTask(Task.never)),
+            )
+            .run(env)
       }
-      .use(_ => Task.never[Unit].map(_ => ExitCode.Success))
+  //something wrong is going on here
+
 }
