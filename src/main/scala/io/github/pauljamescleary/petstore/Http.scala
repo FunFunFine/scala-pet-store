@@ -8,24 +8,30 @@ import io.github.pauljamescleary.petstore.domain.authentication.Auth
 import io.github.pauljamescleary.petstore.domain.orders.OrderService
 import io.github.pauljamescleary.petstore.domain.pets.PetService
 import io.github.pauljamescleary.petstore.domain.users.{UserRepositoryAlgebra, UserService}
-import io.github.pauljamescleary.petstore.infrastructure.endpoint.{OrderEndpoints, PetEndpoints, UserEndpoints}
+import io.github.pauljamescleary.petstore.infrastructure.endpoint.{
+  OrderEndpoints,
+  PetEndpoints,
+  UserEndpoints,
+}
 import io.github.pauljamescleary.petstore.infrastructure.repository.doobie.DoobieAuthRepositoryInterpreter
+import org.http4s.{Request, Response}
 import org.http4s.implicits.http4sKleisliResponseSyntaxOptionT
 import org.http4s.server.blaze.BlazeServerBuilder
 import org.http4s.server.{Router, Server}
+import tofu.lift.Unlift
 import tsec.authentication.SecuredRequestHandler
 import tsec.mac.jca.HMACSHA256
 import tsec.passwordhashers.jca.BCrypt
-
+import tofu.syntax.monadic._
 object Http {
 
-  def mkServer[ F[_]: ConcurrentEffect: Timer](
+  def mkServer[F[_]: ConcurrentEffect: Timer](
       xa: Transactor[F],
       userRepository: UserRepositoryAlgebra[F],
       petService: PetService[F],
       userService: UserService[F],
       orderService: OrderService[F],
-      config: PetStoreConfig
+      config: PetStoreConfig,
   ): Resource[F, Server[F]] =
     for {
       serverEc <- ExecutionContexts.cachedThreadPool[F]
@@ -44,12 +50,10 @@ object Http {
         "/pets" -> PetEndpoints.endpoints[F, HMACSHA256](petService, routeAuth),
         "/orders" -> OrderEndpoints.endpoints[F, HMACSHA256](orderService, routeAuth),
       ).orNotFound
-
       server <- BlazeServerBuilder[F](serverEc)
         .bindHttp(config.server.port, config.server.host)
         .withHttpApp(httpApp)
         .resource
-
     } yield server
 
 }

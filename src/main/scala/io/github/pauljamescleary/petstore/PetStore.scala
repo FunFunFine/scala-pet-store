@@ -63,21 +63,21 @@ object PetStore extends TaskApp {
     )
 
   override def run(args: List[String]): Task[ExitCode] =
-    init.flatMap {
-      case Environment(
-          config,
-          _,
-          _,
-          userRepository,
-          _,
-          petService,
-          _,
-          orderService,
-          userService,
-          xa,
-          ) => Http.mkServer(xa, userRepository, petService, userService, orderService, config)
-    }.use(_ => Task.never[Unit].map(_ => ExitCode.Success))
-
-  //
-
+    init
+      .flatMap {
+        case Environment(
+            config,
+            _,
+            _,
+            userRepository,
+            _,
+            petService,
+            _,
+            orderService,
+            userService,
+            xa,
+            ) =>
+          Http.mkServer(xa, userRepository, petService, userService, orderService, config)
+      }
+      .use(_ => Task.never[Unit].map(_ => ExitCode.Success))
 }
