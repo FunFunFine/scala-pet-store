@@ -1,6 +1,9 @@
 package io.github.pauljamescleary.petstore
 
-import cats.effect.{Resource, _}
+import cats.Monad
+import cats.data.Kleisli
+import cats.effect._
+import doobie.ExecutionContexts
 import doobie.util.transactor.Transactor
 import io.circe.config.parser
 import io.github.pauljamescleary.petstore.config._
@@ -13,42 +16,48 @@ import io.github.pauljamescleary.petstore.infrastructure.repository.doobie.{
   DoobieUserRepositoryInterpreter,
 }
 import monix.eval.{Task, TaskApp}
-import tofu.WithLocal
-import tofu.env.Env
-import tofu.lift.Unlift
-import tofu.optics.Contains
-//import tofu.syntax.monadic._
-import tofu.optics.macros._
-import tofu.syntax.unlift._
+import org.http4s.HttpApp
+import org.http4s.server.blaze.BlazeServerBuilder
+import tofu.WithRun
+import tofu.concurrent.ContextT
+import tofu.lift.Lift
+import tofu.syntax.context.runContext
+import tofu.syntax.funk.funK
+import tofu.syntax.monadic._
+
+import scala.concurrent.ExecutionContext
+case class Application[F[_]](
+    config: PetStoreConfig,
+    transactor: Transactor[F],
+    environment: Environment[F],
+    serverEc: ExecutionContext,
+)
 object PetStore extends TaskApp {
 
-  type App[+A] = Env[Environment, A]
-  type Initiate[+A] = Resource[Task, A]
+  type Init[+A] = Task[A]
+  type App[+A] = ContextT[Task, Environment, A]
 
-  @ClassyOptics
-  final case class Environment(
-      config: PetStoreConfig,
-      petRepository: PetRepositoryAlgebra[App],
-      orderRepository: OrderRepositoryAlgebra[App],
-      userRepository: UserRepositoryAlgebra[App],
-      petValidation: PetValidation[App],
-      petService: PetService[App],
-      userValidation: UserValidation[App],
-      orderService: OrderService[App],
-      userService: UserService[App],
-      xa: Transactor[App],
-  )
-
-  object Environment {
-    implicit def subContext[C](implicit e: Environment Contains C): App WithLocal C = //whats the point of WithLocal?
-      WithLocal[App, Environment].subcontext(e)
+  def run(args: List[String]): Task[ExitCode] = createApplication.use[Task, ExitCode] {
+    case Application(config, transactor, environment, serverEc) =>
+      Http
+        .mkApp[App](transactor)
+        .run(environment)
+        .flatMap((app: HttpApp[App]) =>
+          runServer[Init](config.server, liftApp[App, Init](app, environment), serverEc)
+            .as(ExitCode.Success),
+        )
   }
-  def init: Resource[Task, Environment] =
+
+  def createApplication: Resource[Init, Application[App]] =
     for {
-      conf <- Resource.liftF(parser.decodePathF[Task, PetStoreConfig]("petstore"))
-      implicit0(xa: Transactor[App]) <- MkTransactor.make[Task, App](conf.db)//Can't create Embed[Transactor]
-    } yield Environment(
-      conf,
+      conf <- Resource.liftF(parser.decodePathF[Init, PetStoreConfig]("petstore"))
+      xa <- MkTransactor.make[Init, App](conf.db)
+      env = initEnvironment(xa)
+      ec <- ExecutionContexts.cachedThreadPool[Init]
+    } yield Application(conf, xa, env, ec)
+
+  def initEnvironment(implicit transactor: Transactor[App]): Environment[App] =
+    Environment(
       petRepository = DoobiePetRepositoryInterpreter.make[App],
       orderRepository = DoobieOrderRepositoryInterpreter.make[App],
       userRepository = DoobieUserRepositoryInterpreter.make[App],
@@ -57,32 +66,29 @@ object PetStore extends TaskApp {
       userValidation = UserValidation.make[App],
       orderService = OrderService.make[App],
       userService = UserService.make[App],
-      xa
     )
 
-  override def run(args: List[String]): Task[ExitCode] =
-    init
-      .use {
-        case env @ Environment(
-              config,
-              _,
-              _,
-              userRepository,
-              _,
-              petService,
-              _,
-              orderService,
-              userService,
-              xa,
-            ) =>
-          Unlift[Task, App]
-            .concurrentEffectWith[ExitCode](implicit ce =>
-              Http
-                .mkServer(xa, userRepository, petService, userService, orderService, config)
-                .use(_ => Env.fromTask(Task.never)),
-            )
-            .run(env)
-      }
-  //something wrong is going on here
+  def liftApp[F[_], G[_]: Monad](
+      http: HttpApp[F],
+      env: Environment[F],
+  )(implicit L: Lift[G, F], wr: WithRun[F, G, Environment[F]]): HttpApp[G] = Kleisli { req =>
+    for {
+      responseF <- runContext(http(req.mapK(L.liftF)))(env)
+      responseI = responseF.mapK(funK(fa => runContext(fa)(env)))
+    } yield responseI
+  }
+
+  def runServer[F[_]: ConcurrentEffect: Timer](
+      config: ServerConfig,
+      app: HttpApp[F],
+      ec: ExecutionContext,
+  ): F[Unit] =
+    BlazeServerBuilder
+      .apply[F](ec)
+      .bindHttp(config.port, config.host)
+      .withHttpApp(app)
+      .serve
+      .compile
+      .drain
 
 }
