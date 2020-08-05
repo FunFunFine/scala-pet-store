@@ -26,6 +26,7 @@ import tofu.syntax.funk.funK
 import tofu.syntax.monadic._
 
 import scala.concurrent.ExecutionContext
+
 case class Application[F[_]](
     config: PetStoreConfig,
     transactor: Transactor[F],
@@ -55,6 +56,8 @@ object PetStore extends TaskApp {
       env = initEnvironment(xa)
       ec <- ExecutionContexts.cachedThreadPool[Init]
     } yield Application(conf, xa, env, ec)
+
+
 
   def initEnvironment(implicit transactor: Transactor[App]): Environment[App] =
     Environment(

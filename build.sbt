@@ -20,6 +20,9 @@ val ScalaTestVersion = "3.2.0"
 val ScalaTestPlusVersion = "3.2.0.0"
 val FlywayVersion = "6.5.1"
 val TsecVersion = "0.2.1"
+val TofuVersion = "0.7.8"
+val DerevoVersion = "0.11.4"
+
 
 libraryDependencies ++= Seq(
   "org.typelevel" %% "cats-core" % CatsVersion,
@@ -43,13 +46,12 @@ libraryDependencies ++= Seq(
   "org.scalacheck" %% "scalacheck" % ScalaCheckVersion % Test,
   "org.scalatest" %% "scalatest" % ScalaTestVersion % Test,
   "org.scalatestplus" %% "scalacheck-1-14" % ScalaTestPlusVersion % Test,
-  "ru.tinkoff" %% "tofu" % "0.7.8",
-  "ru.tinkoff" %% "tofu-optics-macro" % "0.7.8",
-  "ru.tinkoff" %% "tofu-optics-core" % "0.7.8",
-  "ru.tinkoff" %% "tofu-zio-interop" % "0.7.8",
-  "ru.tinkoff" %% "tofu-derivation" % "0.7.8",
-  "io.estatico" %% "newtype" % "0.4.4",
-  "org.manatki" %% "derevo-cats" % "0.11.4",
+  "ru.tinkoff" %% "tofu" % TofuVersion,
+  "ru.tinkoff" %% "tofu-optics-macro" % TofuVersion,
+  "ru.tinkoff" %% "tofu-optics-core" % TofuVersion,
+  "ru.tinkoff" %% "tofu-zio-interop" % TofuVersion,
+  "ru.tinkoff" %% "tofu-derivation" % TofuVersion,
+  "org.manatki" %% "derevo-cats" % DerevoVersion,
   // Authentication dependencies
   "io.github.jmcardon" %% "tsec-common" % TsecVersion,
   "io.github.jmcardon" %% "tsec-password" % TsecVersion,
