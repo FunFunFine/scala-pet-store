@@ -30,9 +30,9 @@ class PetEndpointsSpec
 
   def getTestResources(): (AuthTest[IO], HttpApp[IO], PetRepositoryInMemoryInterpreter[IO]) = {
     val userRepo = UserRepositoryInMemoryInterpreter[IO]()
-    val petRepo = PetRepositoryInMemoryInterpreter[IO]()
-    val petValidation = PetValidationInterpreter[IO](petRepo)
-    val petService = PetService[IO](petRepo, petValidation)
+    val petRepo = PetRepositoryInMemoryInterpreter[IO]
+    val petValidation = PetValidation.make[IO](implicitly, petRepo)
+    val petService = PetService.make[IO](implicitly, petRepo, petValidation)
     val auth = new AuthTest[IO](userRepo)
     val petEndpoint = PetEndpoints.endpoints[IO, HMACSHA256](petService, auth.securedRqHandler)
     val petRoutes = Router(("/pets", petEndpoint)).orNotFound
@@ -48,7 +48,7 @@ class PetEndpointsSpec
         response <- petRoutes.run(request)
       } yield {
         response.status shouldEqual Unauthorized
-      }).unsafeRunSync
+      }).unsafeRunSync()
     }
 
     forAll { (pet: Pet, user: User) =>
@@ -58,7 +58,7 @@ class PetEndpointsSpec
         response <- petRoutes.run(request)
       } yield {
         response.status shouldEqual Ok
-      }).unsafeRunSync
+      }).unsafeRunSync()
     }
 
     forAll { (pet: Pet, user: User) =>
@@ -73,7 +73,7 @@ class PetEndpointsSpec
       } yield {
         response.status shouldEqual Ok
         response2.status shouldEqual Ok
-      }).unsafeRunSync
+      }).unsafeRunSync()
     }
   }
 
@@ -93,7 +93,7 @@ class PetEndpointsSpec
         updatedPet <- updateResponse.as[Pet]
       } yield {
         updatedPet.name shouldEqual pet.name.reverse
-      }).unsafeRunSync
+      }).unsafeRunSync()
     }
   }
 
@@ -109,11 +109,11 @@ class PetEndpointsSpec
       } yield {
         createdPet.tags.toList.headOption match {
           case Some(tag) =>
-            val petsFoundByTag = petRepo.findByTag(NonEmptyList.of(tag)).unsafeRunSync
+            val petsFoundByTag = petRepo.findByTag(NonEmptyList.of(tag)).unsafeRunSync()
             petsFoundByTag.contains(createdPet) shouldEqual true
           case _ => ()
         }
-      }).unsafeRunSync
+      }).unsafeRunSync()
     }
   }
 }

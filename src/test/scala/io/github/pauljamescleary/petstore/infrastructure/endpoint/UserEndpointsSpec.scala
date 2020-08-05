@@ -30,8 +30,8 @@ class UserEndpointsSpec
     with LoginTest {
   def userRoutes(): HttpApp[IO] = {
     val userRepo = UserRepositoryInMemoryInterpreter[IO]()
-    val userValidation = UserValidationInterpreter[IO](userRepo)
-    val userService = UserService[IO](userRepo, userValidation)
+    val userValidation = UserValidation.make[IO](implicitly,userRepo)
+    val userService = UserService.make[IO](implicitly,  userRepo, userValidation)
     val key = HMACSHA256.unsafeGenerateKey
     val jwtAuth = JWTAuthenticator.unbacked.inBearerToken(1.day, None, userRepo, key)
     val usersEndpoint = UserEndpoints.endpoints(
@@ -67,7 +67,7 @@ class UserEndpointsSpec
         updateResponse.status shouldEqual Ok
         updatedUser.lastName shouldEqual createdUser.lastName.reverse
         createdUser.id shouldEqual updatedUser.id
-      }).unsafeRunSync
+      }).unsafeRunSync()
     }
   }
 
@@ -85,7 +85,7 @@ class UserEndpointsSpec
       } yield {
         getResponse.status shouldEqual Ok
         createdUser.userName shouldEqual getUser.userName
-      }).unsafeRunSync
+      }).unsafeRunSync()
     }
   }
 
@@ -101,7 +101,7 @@ class UserEndpointsSpec
         deleteResponse <- userEndpoint.run(deleteRequestAuth)
       } yield {
         deleteResponse.status shouldEqual Unauthorized
-      }).unsafeRunSync
+      }).unsafeRunSync()
     }
 
     forAll { userSignup: SignupRequest =>
@@ -118,7 +118,7 @@ class UserEndpointsSpec
         deleteResponse.status shouldEqual Ok
         // The user not the token longer exist
         getResponse.status shouldEqual Unauthorized
-      }).unsafeRunSync
+      }).unsafeRunSync()
     }
   }
 }

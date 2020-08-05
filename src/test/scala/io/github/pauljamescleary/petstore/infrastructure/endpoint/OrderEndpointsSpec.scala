@@ -35,7 +35,7 @@ class OrderEndpointsSpec
   def getTestResources(): (AuthTest[IO], HttpApp[IO]) = {
     val userRepo = UserRepositoryInMemoryInterpreter[IO]()
     val auth = new AuthTest[IO](userRepo)
-    val orderService = OrderService(OrderRepositoryInMemoryInterpreter[IO]())
+    val orderService = OrderService.make[IO](implicitly, OrderRepositoryInMemoryInterpreter[IO])
     val orderEndpoint =
       OrderEndpoints.endpoints[IO, HMACSHA256](orderService, auth.securedRqHandler)
     val orderRoutes = Router(("/orders", orderEndpoint)).orNotFound
@@ -60,7 +60,7 @@ class OrderEndpointsSpec
         orderResp.petId shouldBe order.petId
         getOrderResp.status shouldEqual Ok
         orderResp2.userId shouldBe defined
-      }).unsafeRunSync
+      }).unsafeRunSync()
     }
   }
 
@@ -74,7 +74,7 @@ class OrderEndpointsSpec
         deleteResp <- orderRoutes.run(deleteRq)
       } yield {
         deleteResp.status shouldEqual Unauthorized
-      }).unsafeRunSync
+      }).unsafeRunSync()
     }
 
     forAll { user: AdminUser =>
@@ -84,7 +84,7 @@ class OrderEndpointsSpec
         deleteResp <- orderRoutes.run(deleteRq)
       } yield {
         deleteResp.status shouldEqual Ok
-      }).unsafeRunSync
+      }).unsafeRunSync()
     }
   }
 }
